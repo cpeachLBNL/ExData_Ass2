@@ -16,18 +16,18 @@ dfYearlyEmissions <- aggregate( x=list("Emissions"=NEI_Counties_MV$Emissions),
                                         "fips"=NEI_Counties_MV$fips),
                                 FUN = sum )
 
-for (fips in dfCounties$fips) {
-  #Calculate the percent change vs 1999 emission values for each county
-  dfYearlyEmissions$Percent.Change[dfYearlyEmissions$fips==fips] <- 
-    dfYearlyEmissions$Emissions[dfYearlyEmissions$fips==fips] / 
-    dfYearlyEmissions$Emissions[(dfYearlyEmissions$fips==fips & dfYearlyEmissions$year=="1999")]
-  #Add the real County Name
-  dfYearlyEmissions$county[dfYearlyEmissions$fips==fips] <- as.character(dfCounties$countyName[dfCounties$fips==fips])
-}
+#Calculate the percent change vs 1999 emission values for each county
+dfYearlyEmissions1999 <-dfYearlyEmissions[dfYearlyEmissions$year=="1999", c("fips", "Emissions")]
+colnames(dfYearlyEmissions1999) <- c("fips", "Emissions1999")
+dfYearlyEmissions = join(dfYearlyEmissions, dfYearlyEmissions1999, by="fips")
+dfYearlyEmissions$Percent.Change <- dfYearlyEmissions$Emissions / dfYearlyEmissions$Emissions1999
+
+#Add the real County Name
+dfYearlyEmissions <- join(dfYearlyEmissions, dfCounties, by="fips")
 
 #Create plot and save as PNG file
 png(filename = "plot6.png", width = 480, height = 480)
-qplot(year, Percent.Change, data=dfYearlyEmissions, facets=.~county, geom=c("point")) +
+qplot(year, Percent.Change, data=dfYearlyEmissions, facets=.~countyName, geom=c("point")) +
   geom_smooth(method='lm') + 
   scale_y_continuous(labels=percent_format()) + 
   ggtitle("Percent Change in Emissions from Motor Vehicle Sources \nin Baltimore City and Los Angeles from 1999 to 2008")
